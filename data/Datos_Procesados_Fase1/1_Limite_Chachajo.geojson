@@ -1,0 +1,8 @@
+{
+"type": "FeatureCollection",
+"name": "1_Limite_Chachajo",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:EPSG::3115" } },
+"features": [
+{ "type": "Feature", "properties": { }, "geometry": { "type": "Polygon", "coordinates": [ [ [ 976972.0, 956539.0 ], [ 979439.0, 956925.0 ], [ 980246.0, 953099.0 ], [ 977955.0, 951883.0 ], [ 976531.0, 953500.0 ], [ 976972.0, 956539.0 ] ] ] } }
+]
+}

@@ -1,0 +1,7 @@
+--- Importancia de Variables (Random Forest SDM) ---
+Este reporte indica qué variables espaciales tuvieron más peso en la decisión de la IA para ubicar las cámaras trampa.
+
+- dist_amenaza: 53.21%
+- val_kde_ecocultural: 43.23%
+- dist_agua: 3.56%
+- estado_conservacion_local: 0.00%
