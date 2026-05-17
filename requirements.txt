@@ -1,0 +1,20 @@
+# Framework Principal y Mapa
+streamlit
+folium
+streamlit-folium
+
+# Análisis Espacial y Datos
+geopandas
+pandas
+shapely
+fiona
+pyogrio
+openpyxl
+xlsxwriter
+
+# Procesamiento de Imágenes
+Pillow
+
+# Compilación y Escritorio (Opcional para la web, necesario localmente)
+pywebview
+pyinstaller
