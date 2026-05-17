@@ -1,8 +1,6 @@
 # 🌍 Visor Maestro Chachajo
 
-El **Visor Maestro Chachajo** es una aplicación de escritorio nativa, interactiva y portable, diseñada para la visualización, gestión y edición de datos espaciales, registros fotográficos y bases de datos territoriales de la comunidad de Chachajo. 
-
-Esta herramienta permite a los usuarios explorar el territorio mediante capas analíticas, agregar nueva información en campo y exportar reportes, todo esto de forma local y **sin necesidad de conocimientos técnicos en Sistemas de Información Geográfica (SIG)**.
+El **Visor Maestro Chachajo** es una aplicación actualmente en fase de construcción, diseñada para la sistematización, análisis y gestión de datos geográficos del territorio. Mediante una metodología "offline-first" e interactiva, el programa permite procesar y editar información espacial de forma local y directa en campo. Su propósito central es mapear y sistematizar tanto las áreas que ya han sido intervenidas como aquellas zonas con potencial para aislamiento, facilitando la toma de decisiones para identificar, ubicar y establecer nuevas áreas geográficas estratégicas destinadas a la protección y conservación de la fauna local.
 
 ---
 

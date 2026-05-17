@@ -230,7 +230,7 @@ tab_instrucciones, tab_mapa, tab_datos, tab_export = st.tabs(["📖 Instruccione
 with tab_instrucciones:
     st.subheader("📖 Instrucciones de Uso")
     st.markdown("""
-    Bienvenido al **Visor Maestro Chachajo**. Esta herramienta te permite explorar y gestionar datos geográficos y fotográficos de forma interactiva.
+    Bienvenido al **Visor Maestro Chachajo**, una aplicación en construcción diseñada para la sistematización y gestión de datos geográficos. Mediante una metodología "offline-first", el programa permite procesar información espacial para mapear áreas intervenidas, zonas potenciales para aislamiento y ubicar nuevas áreas geográficas destinadas a la protección de fauna.
 
     ### 🗺️ Visor Geográfico (Mapa)
     - **Navegación:** Usa el ratón para arrastrar el mapa y la rueda para hacer zoom.
