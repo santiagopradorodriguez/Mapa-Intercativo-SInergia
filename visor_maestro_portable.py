@@ -67,7 +67,7 @@ ARCHIVOS_GEOJSON = {
 }
 
 @st.cache_data
-def cargar_datos():
+def cargar_datos_actualizado():
     capas = {}
     
     for nombre, archivo in ARCHIVOS_GEOJSON.items():
@@ -149,9 +149,24 @@ def cargar_datos():
         try:
             xl = pd.ExcelFile(ruta_excel_integrado)
             capas['tablas_extra'] = {}
+            capas['descripciones_excel'] = {}
             
-            for sheet in xl.sheet_names[1:]:
-                df_xls = xl.parse(sheet, skiprows=2).dropna(how='all')
+            for i, sheet in enumerate(xl.sheet_names):
+                # Detección dinámica de la fila de encabezados
+                df_temp = xl.parse(sheet, header=None, nrows=10)
+                
+                if len(df_temp) > 1 and pd.notna(df_temp.iloc[1, 0]):
+                    capas['descripciones_excel'][sheet] = str(df_temp.iloc[1, 0])
+                    
+                sr = 0
+                max_non_null = 0
+                for r in range(len(df_temp)):
+                    count = sum([1 for x in df_temp.iloc[r].dropna().astype(str) if 'unnamed' not in x.lower()])
+                    if count > max_non_null:
+                        max_non_null = count
+                        sr = r
+                        
+                df_xls = xl.parse(sheet, skiprows=sr).dropna(how='all')
                 df_xls.columns = [str(c).strip() for c in df_xls.columns]
                 
                 if 'Longitud (X)' in df_xls.columns and 'Latitud (Y)' in df_xls.columns:
@@ -184,7 +199,7 @@ def cargar_datos():
 
     return capas
 
-capas = cargar_datos()
+capas = cargar_datos_actualizado()
 
 @st.cache_data
 def get_image_base64(path):
@@ -230,7 +245,7 @@ tab_instrucciones, tab_mapa, tab_datos, tab_export = st.tabs(["📖 Instruccione
 with tab_instrucciones:
     st.subheader("📖 Instrucciones de Uso")
     st.markdown("""
-    Bienvenido al **Visor Maestro Chachajo**, una aplicación en construcción diseñada para la sistematización y gestión de datos geográficos. Mediante una metodología "offline-first", el programa permite procesar información espacial para mapear áreas intervenidas, zonas potenciales para aislamiento y ubicar nuevas áreas geográficas destinadas a la protección de fauna.
+    Bienvenido al **Visor Maestro Chachajo**, una aplicación en construcción diseñada para la sistematización y gestión de datos geográficos. El programa permite procesar información espacial para mapear áreas intervenidas, zonas potenciales para aislamiento y ubicar nuevas áreas geográficas destinadas a la protección de fauna.
 
     ### 🗺️ Visor Geográfico (Mapa)
     - **Navegación:** Usa el ratón para arrastrar el mapa y la rueda para hacer zoom.
@@ -499,98 +514,182 @@ else:
     st.sidebar.info("💡 **Para agregar un registro nuevo:**\nUsa la herramienta del pin 📍 en el menú izquierdo del mapa y pon un marcador.")
 
 with tab_datos:
-    st.subheader("Base de Datos Espacial y Tabular (Modo Edición)")
-    st.markdown("Haz doble clic en cualquier celda para modificar la información. Luego, guarda los cambios.")
+    st.subheader("Base de Datos Espacial y Tabular")
     
-    opciones_capas = {
-        "Sitios Estratégicos (Enriquecidos)": "estrategicos",
-        "Registros Fotográficos": "registros_fotos",
-        "Registros Exploración Nueva": "registros_exploracion",
-        "Cámaras Trampa (Enriquecidas)": "camaras",
-        "Puntos Comunidad": "puntos",
-        "Zonas de Uso": "uso",
-        "Zonas Restauración": "restauracion",
-        "Drenajes": "drenajes"
-    }
+    col_texto, col_toggle = st.columns([3, 1])
+    with col_texto:
+        st.markdown("Visualiza y explora las tablas de atributos asociadas a cada capa.")
+    with col_toggle:
+        modo_edicion = st.toggle("✏️ Activar Modo Edición", value=False)
+        
+    if modo_edicion:
+        st.info("Modo Edición activado: Haz doble clic en cualquier celda para modificar la información. Luego, guarda los cambios.")
     
+    categoria = st.radio(
+        "📂 Categoría de Datos:",
+        ["📊 Resumen General", "👥 Cartografía Social", "🗺️ Datos Geográficos", "📸 Registros Fotográficos", "📷 Diseño de Cámaras Trampa"],
+        horizontal=True
+    )
+    
+    opciones_capas = {}
     tablas_extra_keys = {}
-    if 'tablas_extra' in capas:
-        for nombre_hoja in capas['tablas_extra'].keys():
-            etiqueta = f"📊 {nombre_hoja} (Tabla)"
-            opciones_capas[etiqueta] = f"extra_{nombre_hoja}"
-            tablas_extra_keys[f"extra_{nombre_hoja}"] = nombre_hoja
-
-    capa_seleccionada = st.selectbox("Seleccione la capa o tabla para visualizar y editar:", list(opciones_capas.keys()))
-    clave_gdf = opciones_capas[capa_seleccionada]
     
-    if clave_gdf.startswith("extra_"):
-        nombre_hoja = tablas_extra_keys[clave_gdf]
-        df_mostrar = capas['tablas_extra'][nombre_hoja]
-        edited_df = st.data_editor(df_mostrar, use_container_width=True, height=500, key=f"editor_{clave_gdf}")
-        
-        if st.button("💾 Guardar Cambios en Excel", type="primary"):
-            try:
-                ruta_excel_integrado = os.path.join(CARPETA_TABLAS, 'Base_Datos_Integrada_Sinergia_Chachajo.xlsx')
-                with pd.ExcelWriter(ruta_excel_integrado, mode='a', engine='openpyxl', if_sheet_exists='replace') as writer:
-                    edited_df.to_excel(writer, sheet_name=nombre_hoja, index=False)
-                st.success(f"✅ Cambios guardados en la hoja '{nombre_hoja}' del archivo Excel original.")
-                st.cache_data.clear()
-            except Exception as e:
-                st.error(f"Error al guardar: {e}")
-                
-    elif capas.get(clave_gdf) is not None:
-        df_mostrar = pd.DataFrame(capas[clave_gdf].drop(columns='geometry', errors='ignore'))
-        
-        column_config = {}
-        if clave_gdf == "registros_fotos":
-            urls = []
-            for _, row in df_mostrar.iterrows():
-                nombre_img = row.get('Nombre_Archivo_Buscador') if pd.notna(row.get('Nombre_Archivo_Buscador')) else row.get('Índice / Nombre', 'Imagen')
-                carpeta_origen = row.get('Carpeta_Origen', 'Registro Fotográfico')
-                carpeta_origen = 'Registro Fotográfico' if pd.isna(carpeta_origen) else str(carpeta_origen)
-                nombre_img_enc = urllib.parse.quote(str(nombre_img))
-                carpeta_origen_enc = urllib.parse.quote(str(carpeta_origen))
-                urls.append(f"/?visor_img={nombre_img_enc}&carpeta={carpeta_origen_enc}")
-            df_mostrar.insert(0, 'Ver Imagen 📸', urls)
-            column_config['Ver Imagen 📸'] = st.column_config.LinkColumn("Ver Imagen 📸", display_text="Abrir imagen")
+    hojas_excel = list(capas.get('tablas_extra', {}).keys())
+    hoja_resumen = hojas_excel[0] if hojas_excel else None
+    
+    if categoria == "📊 Resumen General":
+        if hoja_resumen:
+            opciones_capas[f"📊 {hoja_resumen}"] = f"extra_{hoja_resumen}"
+            tablas_extra_keys[f"extra_{hoja_resumen}"] = hoja_resumen
+        else:
+            st.info("No se encontró el Resumen General en la base de datos Excel.")
             
-        elif clave_gdf == "registros_exploracion":
-            urls = []
-            for _, row in df_mostrar.iterrows():
-                nombre_img = row.get('Nombre_Archivo_Buscador') if pd.notna(row.get('Nombre_Archivo_Buscador')) else row.get('Nombre de Archivo', 'Imagen')
-                nombre_img_enc = urllib.parse.quote(str(nombre_img))
-                urls.append(f"/?visor_img={nombre_img_enc}&carpeta=Recorrido%20Exploratorio")
-            df_mostrar.insert(0, 'Ver Imagen 📸', urls)
-            column_config['Ver Imagen 📸'] = st.column_config.LinkColumn("Ver Imagen 📸", display_text="Abrir imagen")
-
-        edited_df = st.data_editor(df_mostrar, use_container_width=True, height=500, key=f"editor_{clave_gdf}", column_config=column_config)
+    elif categoria == "👥 Cartografía Social":
+        opciones_carto = []
+        for hoja in hojas_excel:
+            h_low = hoja.lower()
+            if not any(x in h_low for x in ['resumen', 'puntos', 'gis', 'estratégic', 'estrategic', 'camara', 'cámara', 'fauna', 'flora', 'planta', 'bio', 'etno']):
+                opciones_carto.append(f"👥 {hoja}")
+        opciones_carto.append("🌱 Biodiversidad y Etnobiología")
         
-        if st.button("💾 Guardar Cambios en Capa Espacial", type="primary"):
-            try:
-                gdf_original = capas[clave_gdf]
-                if 'Ver Imagen 📸' in edited_df.columns:
-                    edited_df = edited_df.drop(columns=['Ver Imagen 📸'])
-                edited_gdf = gpd.GeoDataFrame(edited_df, geometry=gdf_original.geometry, crs=gdf_original.crs)
+        sub_categoria = st.selectbox("Seleccione la subsección:", opciones_carto)
+        
+        if sub_categoria == "🌱 Biodiversidad y Etnobiología":
+            for hoja in hojas_excel:
+                h_low = hoja.lower()
+                if 'fauna' in h_low:
+                    opciones_capas["🐾 Fauna Local"] = f"extra_{hoja}"
+                    tablas_extra_keys[f"extra_{hoja}"] = hoja
+                elif 'flora' in h_low or 'planta' in h_low:
+                    opciones_capas["🌿 Flora Local"] = f"extra_{hoja}"
+                    tablas_extra_keys[f"extra_{hoja}"] = hoja
+            
+            # Forzar la descripción de la categoría principal si existe
+            desc_bio = ""
+            for h in hojas_excel:
+                if 'bio' in h.lower() or 'etno' in h.lower():
+                    desc_bio = capas.get('descripciones_excel', {}).get(h, "")
+                    break
+            if len(desc_bio) > 10 and "unnamed" not in desc_bio.lower():
+                st.info(f"📖 **Descripción de la sección:** {desc_bio}")
                 
-                ruta_guardar = None
-                if clave_gdf in ARCHIVOS_GEOJSON:
-                    ruta_guardar = os.path.join(CARPETA_DATOS, ARCHIVOS_GEOJSON[clave_gdf])
-                elif clave_gdf == "estrategicos":
-                    for f in os.listdir(CARPETA_DATOS):
-                        if f.endswith('.geojson') and any(x in f.lower() for x in ['estrategicos', 'matematizados', 'tsv']):
-                            ruta_guardar = os.path.join(CARPETA_DATOS, f)
-                            break
-                            
-                if ruta_guardar and os.path.exists(ruta_guardar):
-                    edited_gdf.to_file(ruta_guardar, driver='GeoJSON')
-                    st.success("✅ Cambios guardados correctamente.")
-                    st.cache_data.clear()
-                else:
-                    st.error("❌ No se pudo localizar el archivo fuente.")
-            except Exception as e:
-                st.error(f"Error al guardar: {e}")
-    else:
-        st.warning("No hay datos disponibles para esta capa o tabla.")
+        else:
+            hoja_real = sub_categoria.replace("👥 ", "")
+            opciones_capas[sub_categoria] = f"extra_{hoja_real}"
+            tablas_extra_keys[f"extra_{hoja_real}"] = hoja_real
+            
+        if not opciones_carto:
+            st.info("No se encontraron tablas de Cartografía Social en el Excel.")
+            
+    elif categoria == "🗺️ Datos Geográficos":
+        opciones_capas = {
+            "Sitios Estratégicos (Enriquecidos)": "estrategicos",
+            "Puntos Comunidad": "puntos",
+            "Zonas de Uso": "uso",
+            "Zonas Restauración": "restauracion",
+            "Drenajes": "drenajes"
+        }
+        
+    elif categoria == "📸 Registros Fotográficos":
+        opciones_capas = {
+            "Registros Fotográficos": "registros_fotos",
+            "Registros Exploración Nueva": "registros_exploracion"
+        }
+        
+    elif categoria == "📷 Diseño de Cámaras Trampa":
+        opciones_capas = {
+            "Cámaras Trampa (Enriquecidas)": "camaras"
+        }
+        
+    if opciones_capas:
+        capa_seleccionada = st.selectbox("Seleccione la capa o tabla para visualizar y editar:", list(opciones_capas.keys()))
+        clave_gdf = opciones_capas[capa_seleccionada]
+        
+        if clave_gdf.startswith("extra_"):
+            nombre_hoja = tablas_extra_keys[clave_gdf]
+            df_mostrar = capas['tablas_extra'][nombre_hoja]
+            
+            desc_texto = capas.get('descripciones_excel', {}).get(nombre_hoja, "")
+            if len(desc_texto) > 10 and "unnamed" not in desc_texto.lower():
+                st.info(f"📖 **Descripción de la sección:** {desc_texto}")
+
+            if modo_edicion:
+                edited_df = st.data_editor(df_mostrar, use_container_width=True, height=500, key=f"editor_{clave_gdf}", num_rows="dynamic", hide_index=True)
+                if st.button("💾 Guardar Cambios en Excel", type="primary"):
+                    try:
+                        ruta_excel_integrado = os.path.join(CARPETA_TABLAS, 'Base_Datos_Integrada_Sinergia_Chachajo.xlsx')
+                        with pd.ExcelWriter(ruta_excel_integrado, mode='a', engine='openpyxl', if_sheet_exists='replace') as writer:
+                            edited_df.to_excel(writer, sheet_name=nombre_hoja, index=False)
+                        st.success(f"✅ Cambios guardados en la hoja '{nombre_hoja}' del archivo Excel original.")
+                        st.cache_data.clear()
+                    except Exception as e:
+                        st.error(f"Error al guardar: {e}")
+            else:
+                st.dataframe(df_mostrar, use_container_width=True, height=500, key=f"view_{clave_gdf}", hide_index=True)
+                    
+        elif capas.get(clave_gdf) is not None:
+            df_mostrar = pd.DataFrame(capas[clave_gdf].drop(columns='geometry', errors='ignore'))
+
+            if clave_gdf == "estrategicos":
+                for sheet_name, desc in capas.get('descripciones_excel', {}).items():
+                    if 'puntos' in sheet_name.lower() or 'estratégic' in sheet_name.lower() or 'estrategic' in sheet_name.lower() or 'gis' in sheet_name.lower():
+                        if len(desc) > 10 and "unnamed" not in desc.lower():
+                            st.info(f"📖 **Descripción de la sección:** {desc}")
+                        break
+
+            column_config = {}
+            if clave_gdf == "registros_fotos":
+                urls = []
+                for _, row in df_mostrar.iterrows():
+                    nombre_img = row.get('Nombre_Archivo_Buscador') if pd.notna(row.get('Nombre_Archivo_Buscador')) else row.get('Índice / Nombre', 'Imagen')
+                    carpeta_origen = row.get('Carpeta_Origen', 'Registro Fotográfico')
+                    carpeta_origen = 'Registro Fotográfico' if pd.isna(carpeta_origen) else str(carpeta_origen)
+                    nombre_img_enc = urllib.parse.quote(str(nombre_img))
+                    carpeta_origen_enc = urllib.parse.quote(str(carpeta_origen))
+                    urls.append(f"/?visor_img={nombre_img_enc}&carpeta={carpeta_origen_enc}")
+                df_mostrar.insert(0, 'Ver Imagen 📸', urls)
+                column_config['Ver Imagen 📸'] = st.column_config.LinkColumn("Ver Imagen 📸", display_text="Abrir imagen")
+                
+            elif clave_gdf == "registros_exploracion":
+                urls = []
+                for _, row in df_mostrar.iterrows():
+                    nombre_img = row.get('Nombre_Archivo_Buscador') if pd.notna(row.get('Nombre_Archivo_Buscador')) else row.get('Nombre de Archivo', 'Imagen')
+                    nombre_img_enc = urllib.parse.quote(str(nombre_img))
+                    urls.append(f"/?visor_img={nombre_img_enc}&carpeta=Recorrido%20Exploratorio")
+                df_mostrar.insert(0, 'Ver Imagen 📸', urls)
+                column_config['Ver Imagen 📸'] = st.column_config.LinkColumn("Ver Imagen 📸", display_text="Abrir imagen")
+    
+            if modo_edicion:
+                edited_df = st.data_editor(df_mostrar, use_container_width=True, height=500, key=f"editor_{clave_gdf}", column_config=column_config, hide_index=True)
+                
+                if st.button("💾 Guardar Cambios en Capa Espacial", type="primary"):
+                    try:
+                        gdf_original = capas[clave_gdf]
+                        if 'Ver Imagen 📸' in edited_df.columns:
+                            edited_df = edited_df.drop(columns=['Ver Imagen 📸'])
+                        edited_gdf = gpd.GeoDataFrame(edited_df, geometry=gdf_original.geometry, crs=gdf_original.crs)
+                        
+                        ruta_guardar = None
+                        if clave_gdf in ARCHIVOS_GEOJSON:
+                            ruta_guardar = os.path.join(CARPETA_DATOS, ARCHIVOS_GEOJSON[clave_gdf])
+                        elif clave_gdf == "estrategicos":
+                            for f in os.listdir(CARPETA_DATOS):
+                                if f.endswith('.geojson') and any(x in f.lower() for x in ['estrategicos', 'matematizados', 'tsv']):
+                                    ruta_guardar = os.path.join(CARPETA_DATOS, f)
+                                    break
+                                    
+                        if ruta_guardar and os.path.exists(ruta_guardar):
+                            edited_gdf.to_file(ruta_guardar, driver='GeoJSON')
+                            st.success("✅ Cambios guardados correctamente.")
+                            st.cache_data.clear()
+                        else:
+                            st.error("❌ No se pudo localizar el archivo fuente.")
+                    except Exception as e:
+                        st.error(f"Error al guardar: {e}")
+            else:
+                st.dataframe(df_mostrar, use_container_width=True, height=500, key=f"view_{clave_gdf}", column_config=column_config, hide_index=True)
+        else:
+            st.warning("No hay datos disponibles para esta capa o tabla.")
 
 with tab_export:
     st.subheader("Exportación de Datos")

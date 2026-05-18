@@ -16,10 +16,30 @@ El **Visor Maestro Chachajo** es una aplicación actualmente en fase de construc
 3. **Gestión y Edición de Datos Espaciales:**
    * Inserción de nuevos puntos (marcadores) directamente en el mapa usando herramientas de dibujo interactivo.
    * Asignación automática a capas específicas (Comunidad, Cámaras Trampa, Sitios Estratégicos).
-   * Edición tabular en caliente: modificación de atributos directamente en tablas interactivas con guardado bidireccional (GeoJSON y Excel).
+   * Edición tabular en caliente: modificación de atributos con doble clic directamente en tablas interactivas y guardado bidireccional (GeoJSON y Excel).
 4. **Exportación de Resultados:**
-   * Guardado del mapa actual como un archivo HTML interactivo (captura web).
-   * Exportación de la base de datos actualizada a un reporte consolidado en Excel (`.xlsx`).
+   * Guardado del mapa actual como un archivo HTML interactivo directamente al Escritorio.
+   * Exportación de la base de datos actualizada a un reporte consolidado en Excel (`.xlsx`) en el Escritorio.
+
+---
+
+## 📖 Instrucciones de Uso
+
+### 🗺️ Visor Geográfico (Mapa)
+- **Navegación:** Usa el ratón para arrastrar el mapa y la rueda para hacer zoom.
+- **Capas Analíticas:** En el panel izquierdo, activa o desactiva diferentes capas.
+- **Añadir Puntos:** En la esquina superior izquierda del mapa, haz clic en el icono de marcador (📍) y luego en cualquier parte del mapa. Rellena el formulario del panel lateral para guardar el punto en una capa específica.
+- **Visor de Fotos:** Haz clic en los marcadores de las capas fotográficas para ver la imagen en miniatura y sus metadatos.
+
+### 📋 Tabla de Atributos (Edición)
+- **Edición:** Activa el "Modo Edición", haz doble clic en cualquier celda para modificar su contenido de forma temporal.
+- **Guardado:** Presiona el botón "💾 Guardar Cambios" correspondiente para actualizar de forma permanente la base de datos (Excel o GeoJSON).
+- **Imágenes:** En las tablas de fotografías, usa el enlace **"Ver Imagen 📸"** para abrir la imagen original en el visor integrado a pantalla completa.
+
+### 💾 Exportación
+- **Captura Web (HTML):** Descarga el mapa actual como un archivo interactivo para abrirlo en cualquier navegador sin internet.
+- **Reporte Excel:** Descarga todas las tablas de datos (incluyendo tus modificaciones).
+*Nota: Todos los archivos exportados se guardarán automáticamente en tu **Escritorio**.*
 
 ---
 
@@ -44,6 +64,15 @@ Para que el visor funcione correctamente, los datos deben estar organizados de l
 * `Datos_Procesados_Fase1/`: Contiene todos los polígonos, líneas y puntos en formato `GeoJSON` estandarizado (WGS84 - EPSG:4326).
 * `Tablas/`: Contiene la *Base de Datos Integrada Sinergia* en Excel, así como los registros exploratorios en formato `.tsv`.
 * `Fotos/`: Estructura de carpetas (`Registro Fotográfico` y `Recorrido Exploratorio`) donde reposan los archivos `.jpg` y `.png` vinculados espacialmente en las tablas.
+
+---
+
+## ⚙️ Scripts Auxiliares
+
+El repositorio incluye scripts modulares para el procesamiento previo de la información:
+* `extractor_datos.py`: Script diseñado para compilar automáticamente los archivos dispersos de GeoJSON, Excel, y TSV en la carpeta unificada `/data/` requerida por el visor.
+* `separar_biodiversidad.py`: Herramienta de línea de comandos para fragmentar y limpiar las bases de datos de Excel dividiendo automáticamente los registros de Fauna y Flora local.
+* `compilador.py`: Empaqueta la aplicación de Streamlit y las dependencias de Python en un único archivo ejecutable (`.exe`) a través de PyInstaller y PyWebView.
 
 ---
 
