@@ -233,7 +233,7 @@ mostrar_kde = st.sidebar.checkbox("KDE (Mapa Calor)", value=False)
 mostrar_estrategicos = st.sidebar.checkbox("Sitios Estratégicos (TSV)", value=True)
 mostrar_fotos = st.sidebar.checkbox("Registros Fotográficos", value=True)
 mostrar_exploracion = st.sidebar.checkbox("Registros Exploración", value=True)
-mostrar_camaras = st.sidebar.checkbox("Cámaras Trampa (IA)", value=True)
+mostrar_camaras = st.sidebar.checkbox("Cámaras Trampa (Desarrollo)", value=False)
 
 # --- INICIALIZAR EL CONTADOR NUCLEAR ---
 if 'map_key_counter' not in st.session_state:
